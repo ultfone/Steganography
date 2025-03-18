@@ -47,9 +47,11 @@ class MainActivity : ComponentActivity() {
 fun ImagePicker(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val imageUri = remember { mutableStateOf<Uri?>(null) }
+    val counter = remember { mutableStateOf(0) }
 
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+
+    val gridTypeShi = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri.value = uri
@@ -60,9 +62,13 @@ fun ImagePicker(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+            Button(onClick = { gridTypeShi.launch("image/*") }) {
                 Text("Pick an Image")
             }
+            Button(onClick = { counter.value++ }) {
+                Text("Count: ${counter.value}")
+            }
+
 
             imageUri.value?.let { uri ->
                 Image(
