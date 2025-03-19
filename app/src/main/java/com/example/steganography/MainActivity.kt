@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.size
+import androidx.core.view.WindowCompat
 
 
 import com.example.steganography.ui.theme.SteganographyTheme
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            WindowCompat.setDecorFitsSystemWindows(window,false)
             SteganographyTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     ImagePicker(modifier = Modifier.padding(innerPadding))
