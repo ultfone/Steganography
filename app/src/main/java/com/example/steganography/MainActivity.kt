@@ -45,16 +45,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun ImagePicker(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val imageUri = remember { mutableStateOf<Uri?>(null) }
     val counter = remember { mutableStateOf(0) }
-
-
-
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
     val gridTypeShi = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri.value = uri
     }
