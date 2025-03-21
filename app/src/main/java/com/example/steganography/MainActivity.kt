@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+//import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,11 +66,6 @@ fun ImagePicker(modifier: Modifier = Modifier) {
             Button(onClick = { gridTypeShi.launch("image/*") }) {
                 Text("Pick an Image")
             }
-            Button(onClick = { counter.value++ }) {
-                Text("Count: ${counter.value}")
-            }
-
-
             imageUri.value?.let { uri ->
                 Image(
                     painter = rememberAsyncImagePainter(uri),
@@ -86,7 +82,7 @@ fun ImagePicker(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    SteganographyTheme {
-        ImagePicker()
+            SteganographyTheme {
+                ImagePicker()
     }
 }
