@@ -5,75 +5,119 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-//import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.size
-import androidx.core.view.WindowCompat
-
-
 import com.example.steganography.ui.theme.SteganographyTheme
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            WindowCompat.setDecorFitsSystemWindows(window,false)
             SteganographyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ImagePicker(modifier = Modifier.padding(innerPadding))
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(0xFF121212)
+                ) {
+                    ImagePicker()
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun ImagePicker(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val counter = remember { mutableStateOf(0) }
+fun ImagePicker() {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
-    val gridTypeShi = rememberLauncherForActivityResult(
-         contract = ActivityResultContracts.GetContent()
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri.value = uri
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { gridTypeShi.launch("image/*") }) {
-                Text("Pick an Image")
-            }
-            imageUri.value?.let { uri ->
+        Text(
+            text = "Steganography",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        Button(
+            onClick = { imagePicker.launch("image/*") },
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(50.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD31858))
+        ) {
+            Text(text = "Select Image", color = Color.White, fontSize = 16.sp)
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        imageUri.value?.let { uri ->
+            Card(
+                modifier = Modifier
+                    .size(250.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                elevation = CardDefaults.elevatedCardElevation(6.dp)
+            ) {
                 Image(
                     painter = rememberAsyncImagePainter(uri),
                     contentDescription = "Selected Image",
-                    modifier = Modifier
-                        .size(200.dp)
-                        .padding(top = 16.dp)
+                    modifier = Modifier.fillMaxSize()
                 )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                        .height(45.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF43A047))
+                ) {
+                    Text(text = "Encrypt", color = Color.White, fontSize = 16.sp)
+                }
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
+                        .height(45.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDA0F0F))
+                ) {
+                    Text(text = "Decrypt", color = Color.White, fontSize = 16.sp)
+                }
             }
         }
     }
@@ -81,8 +125,8 @@ fun ImagePicker(modifier: Modifier = Modifier) {
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-            SteganographyTheme {
-                ImagePicker()
+fun PreviewImagePicker() {
+    SteganographyTheme {
+        ImagePicker()
     }
 }
