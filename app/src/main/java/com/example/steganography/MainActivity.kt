@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+//I am a pos who didn't do anything today
 @Composable
 fun ImagePicker() {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
