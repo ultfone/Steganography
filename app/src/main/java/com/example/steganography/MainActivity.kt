@@ -93,7 +93,7 @@ fun ImagePicker() {
                     modifier = Modifier.fillMaxSize()
                 )
             }
-
+/*`*/
             Spacer(modifier = Modifier.height(20.dp))
 
             Row(horizontalArrangement = Arrangement.SpaceEvenly) {
