@@ -19,36 +19,49 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.steganography.ui.theme.SteganographyTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
+import com.example.steganography.ui.theme.SteganographyTheme
 
 class MainActivity : ComponentActivity() {
+    // Declare JNI functions
+    external fun encryptMessage(input: String): String
+    external fun decryptMessage(input: String): String
+
+    companion object {
+        init {
+            System.loadLibrary("steganography") // Load C++ library
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SteganographyTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF121212)
+                    color = Color(0xFF121214)
                 ) {
-                    ImagePicker()
+                    ImagePicker(this)
                 }
             }
         }
     }
 }
-//I am a pos who didn't do anything today
+
 @Composable
-fun ImagePicker() {
+fun ImagePicker(activity: MainActivity) {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri.value = uri
     }
+
+    var encryptedText by remember { mutableStateOf("") }
+    var decryptedText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -93,12 +106,12 @@ fun ImagePicker() {
                     modifier = Modifier.fillMaxSize()
                 )
             }
-/*`*/
+
             Spacer(modifier = Modifier.height(20.dp))
 
             Row(horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(
-                    onClick = {},
+                    onClick = { encryptedText = activity.encryptMessage("Hello") },
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 8.dp)
@@ -109,7 +122,7 @@ fun ImagePicker() {
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = { decryptedText = activity.decryptMessage(encryptedText) },
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
@@ -119,6 +132,19 @@ fun ImagePicker() {
                     Text(text = "Decrypt", color = Color.White, fontSize = 16.sp)
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Encrypted: $encryptedText",
+                color = Color.White,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Decrypted: $decryptedText",
+                color = Color.White,
+                fontSize = 14.sp
+            )
         }
     }
 }
@@ -127,6 +153,6 @@ fun ImagePicker() {
 @Composable
 fun PreviewImagePicker() {
     SteganographyTheme {
-        ImagePicker()
+        ImagePicker(MainActivity())
     }
 }

@@ -7,6 +7,14 @@ plugins {
 android {
     namespace = "com.example.steganography"
     compileSdk = 35
+    ndkVersion = "25.1.8937393"
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.steganography"
