@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.steganography.ui.theme.SteganographyTheme
 
 class MainActivity : ComponentActivity() {
-    // Declare JNI functions
     external fun encryptMessage(input: String): String
     external fun decryptMessage(input: String): String
 
