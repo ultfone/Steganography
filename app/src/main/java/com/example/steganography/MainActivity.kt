@@ -122,18 +122,24 @@ fun ImagePicker() {
             }
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(text = "Encrypted: $encryptedText", color = Color.White, fontSize = 14.sp)
-            Text(text = "Decrypted: $decryptedText", color = Color.White, fontSize = 14.sp)
+            Text(text = "Encrypted: $encryptedText",
+                color = Color.White, fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.height(10.dp))
+            
+            Text(text = "Decrypted: $decryptedText",
+                color = Color.White, fontSize = 14.sp)
         }
     }
 }
 
 fun encryptMessage(input: String): String {
-    return Base64.getEncoder().encodeToString(input.toByteArray())
+    return "hey"
 }
 
+
 fun decryptMessage(input: String): String {
-    return String(Base64.getDecoder().decode(input))
+    return "decrypt"
 }
 
 
