@@ -15,26 +15,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.tooling.preview.Preview
+import coil.compose.rememberAsyncImagePainter
 import com.example.steganography.ui.theme.SteganographyTheme
+import java.util.Base64
 
 class MainActivity : ComponentActivity() {
-    external fun encryptMessage(input: String): String
-    external fun decryptMessage(input: String): String
-
-    companion object {
-        init {
-            System.loadLibrary("steganography") // Load C++ library
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -43,7 +34,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF121214)
                 ) {
-                    ImagePicker(this)
+                    ImagePicker()
                 }
             }
         }
@@ -51,16 +42,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ImagePicker(activity: MainActivity) {
+fun ImagePicker() {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri.value = uri
-    }
+    ) { uri: Uri? -> imageUri.value = uri }
 
-    var encryptedText by remember { mutableStateOf("") }
-    var decryptedText by remember { mutableStateOf("") }
+    var encryptedText by remember { mutableStateOf("No encryption yet") }
+    var decryptedText by remember { mutableStateOf("No decryption yet") }
 
     Column(
         modifier = Modifier
@@ -110,7 +99,7 @@ fun ImagePicker(activity: MainActivity) {
 
             Row(horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(
-                    onClick = { encryptedText = activity.encryptMessage("Hello") },
+                    onClick = { encryptedText = encryptMessage("Hello") },
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 8.dp)
@@ -121,7 +110,7 @@ fun ImagePicker(activity: MainActivity) {
                 }
 
                 Button(
-                    onClick = { decryptedText = activity.decryptMessage(encryptedText) },
+                    onClick = { decryptedText = decryptMessage(encryptedText) },
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
@@ -131,27 +120,27 @@ fun ImagePicker(activity: MainActivity) {
                     Text(text = "Decrypt", color = Color.White, fontSize = 16.sp)
                 }
             }
-/surr
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = "Encrypted: $encryptedText",
-                color = Color.White,
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Decrypted: $decryptedText",
-                color = Color.White,
-                fontSize = 14.sp
-            )
+            Text(text = "Encrypted: $encryptedText", color = Color.White, fontSize = 14.sp)
+            Text(text = "Decrypted: $decryptedText", color = Color.White, fontSize = 14.sp)
         }
     }
 }
+
+fun encryptMessage(input: String): String {
+    return Base64.getEncoder().encodeToString(input.toByteArray())
+}
+
+fun decryptMessage(input: String): String {
+    return String(Base64.getDecoder().decode(input))
+}
+
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewImagePicker() {
     SteganographyTheme {
-        ImagePicker(MainActivity())
+        ImagePicker()
     }
 }
