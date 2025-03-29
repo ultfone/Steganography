@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.rememberAsyncImagePainter
 import com.example.steganography.ui.theme.SteganographyTheme
-import java.util.Base64
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -126,7 +125,7 @@ fun ImagePicker() {
                 color = Color.White, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(10.dp))
-            
+
             Text(text = "Decrypted: $decryptedText",
                 color = Color.White, fontSize = 14.sp)
         }
