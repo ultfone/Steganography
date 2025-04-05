@@ -1,28 +1,34 @@
 package com.example.steganography
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
-import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.unit.*
+import androidx.core.content.FileProvider
 import com.example.steganography.ui.theme.SteganographyTheme
+import java.io.*
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,121 +37,230 @@ class MainActivity : ComponentActivity() {
             SteganographyTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF121214)
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    ImagePicker()
+                    MainStegoUI()
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
-fun ImagePicker() {
-    val imageUri = remember { mutableStateOf<Uri?>(null) }
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> imageUri.value = uri }
+fun MainStegoUI() {
+    val context = LocalContext.current
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var inputMessage by remember { mutableStateOf("") }
+    var extractedMessage by remember { mutableStateOf<String?>(null) }
+    var showDownloadButton by remember { mutableStateOf(false) }
+    var resultBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var encryptedText by remember { mutableStateOf("No encryption yet") }
-    var decryptedText by remember { mutableStateOf("No decryption yet") }
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedImageUri = uri
+        errorMessage = null
+        extractedMessage = null
+        showDownloadButton = false
+        resultBitmap = null
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Steganography",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = "CyberStego",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .graphicsLayer {
+                    shadowElevation = 12f
+                }
+                .drawBehind {
+                    drawRect(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                }
         )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = inputMessage,
+            onValueChange = { inputMessage = it },
+            label = { Text("Enter secret message") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .blur(1.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.primary,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
 
         Button(
             onClick = { imagePicker.launch("image/*") },
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .height(50.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD31858))
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary
+            )
         ) {
-            Text(text = "Select Image", color = Color.White, fontSize = 16.sp)
+            Text("Pick Image")
+        }
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        selectedImageUri?.let { uri ->
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Selected image",
+                modifier = Modifier
+                    .size(250.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(2.dp, MaterialTheme.colorScheme.primary)
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        imageUri.value?.let { uri ->
-            Card(
-                modifier = Modifier
-                    .size(250.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                elevation = CardDefaults.elevatedCardElevation(6.dp)
+        Row {
+            Button(
+                onClick = {
+                    encodeImage(selectedImageUri, inputMessage, context) { encodedBitmap, error ->
+                        resultBitmap = encodedBitmap
+                        errorMessage = error
+                        showDownloadButton = encodedBitmap != null
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                enabled = !isLoading
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(uri),
-                    contentDescription = "Selected Image",
-                    modifier = Modifier.fillMaxSize()
+                Text(if (isLoading) "Encoding..." else "Encrypt")
+            }
+
+            Spacer(modifier = Modifier.width(20.dp))
+
+            Button(
+                onClick = {
+                    decodeImage(selectedImageUri, context) { decodedMessage, error ->
+                        extractedMessage = decodedMessage
+                        errorMessage = error
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                ),
+                enabled = !isLoading
+            ) {
+                Text(if (isLoading) "Decoding..." else "Decrypt")
+            }
+        }
+
+        AnimatedVisibility(visible = errorMessage != null) {
+            Column {
+                Spacer(modifier = Modifier.height(15.dp))
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(8.dp)
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(20.dp))
+        AnimatedVisibility(visible = extractedMessage != null) {
+            Column {
+                Spacer(modifier = Modifier.height(15.dp))
+                Text(
+                    text = "Extracted: $extractedMessage",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
 
-            Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+        AnimatedVisibility(visible = showDownloadButton && resultBitmap != null) {
+            Column {
+                Spacer(modifier = Modifier.height(15.dp))
                 Button(
-                    onClick = { encryptedText = encryptMessage("Hello") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                        .height(45.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF43A047))
+                    onClick = {
+                        resultBitmap?.let {
+                            val filename = "stego_${UUID.randomUUID()}.png"
+                            val file = File(context.cacheDir, filename)
+                            FileOutputStream(file).use { out ->
+                                it.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "image/png"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Encoded Image"))
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary
+                    )
                 ) {
-                    Text(text = "Encrypt", color = Color.White, fontSize = 16.sp)
-                }
-
-                Button(
-                    onClick = { decryptedText = decryptMessage(encryptedText) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp)
-                        .height(45.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDA0F0F))
-                ) {
-                    Text(text = "Decrypt", color = Color.White, fontSize = 16.sp)
+                    Text("Share Encoded Image")
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(text = "Encrypted: $encryptedText",
-                color = Color.White, fontSize = 14.sp)
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(text = "Decrypted: $decryptedText",
-                color = Color.White, fontSize = 14.sp)
         }
     }
 }
 
-fun encryptMessage(input: String): String {
-    return "hey"
+private fun encodeImage(
+    uri: Uri?,
+    message: String,
+    context: android.content.Context,
+    callback: (Bitmap?, String?) -> Unit
+) {
+    if (uri == null) {
+        callback(null, "Please select an image first")
+        return
+    }
+
+    try {
+        val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
+        val encoded = StegoUtils.encode(bitmap, message)
+        callback(encoded, null)
+    } catch (e: IllegalArgumentException) {
+        callback(null, e.message)
+    } catch (e: Exception) {
+        callback(null, "An error occurred while encoding the message")
+    }
 }
 
+private fun decodeImage(
+    uri: Uri?,
+    context: android.content.Context,
+    callback: (String?, String?) -> Unit
+) {
+    if (uri == null) {
+        callback(null, "Please select an image first")
+        return
+    }
 
-fun decryptMessage(input: String): String {
-    return "decrypt"
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewImagePicker() {
-    SteganographyTheme {
-        ImagePicker()
+    try {
+        val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
+        val decoded = StegoUtils.decode(bitmap)
+        callback(decoded, null)
+    } catch (e: Exception) {
+        callback(null, "An error occurred while decoding the message")
     }
 }
