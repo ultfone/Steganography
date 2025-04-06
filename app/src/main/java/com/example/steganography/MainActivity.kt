@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -12,16 +13,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
@@ -39,16 +39,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainStegoUI()
+                    MainUI()
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainStegoUI() {
+fun MainUI() {
     val context = LocalContext.current
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var inputMessage by remember { mutableStateOf("") }
@@ -70,24 +70,30 @@ fun MainStegoUI() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Center,
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "CyberStego",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.primary,
+        Card(
             modifier = Modifier
-                .graphicsLayer {
-                    shadowElevation = 12f
-                }
-                .drawBehind {
-                    drawRect(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                }
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Text(
+                text = "Steganography",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
 
         OutlinedTextField(
             value = inputMessage,
@@ -95,104 +101,161 @@ fun MainStegoUI() {
             label = { Text("Enter secret message") },
             modifier = Modifier
                 .fillMaxWidth()
-                .blur(1.dp),
+                .padding(vertical = 8.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.primary,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            shape = RoundedCornerShape(12.dp)
         )
 
-        Spacer(modifier = Modifier.height(15.dp))
-
-        Button(
+        ElevatedButton(
             onClick = { imagePicker.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondary
-            )
+            colors = ButtonDefaults.elevatedButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Pick Image")
+            Text("Select Image", style = MaterialTheme.typography.titleMedium)
         }
-
-        Spacer(modifier = Modifier.height(15.dp))
 
         selectedImageUri?.let { uri ->
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Selected image",
-                modifier = Modifier
-                    .size(250.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(2.dp, MaterialTheme.colorScheme.primary)
-            )
+            val bitmap = remember(uri) {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            }
+            bitmap?.let {
+                Card(
+                    modifier = Modifier
+                        .size(250.dp)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "Selected image",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Button(
                 onClick = {
+                    isLoading = true
                     encodeImage(selectedImageUri, inputMessage, context) { encodedBitmap, error ->
                         resultBitmap = encodedBitmap
                         errorMessage = error
                         showDownloadButton = encodedBitmap != null
+                        isLoading = false
                     }
                 },
+                modifier = Modifier.weight(1f),
+                enabled = !isLoading && selectedImageUri != null && inputMessage.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                ),
-                enabled = !isLoading
+                )
             ) {
                 Text(if (isLoading) "Encoding..." else "Encrypt")
             }
 
-            Spacer(modifier = Modifier.width(20.dp))
-
             Button(
                 onClick = {
+                    isLoading = true
                     decodeImage(selectedImageUri, context) { decodedMessage, error ->
                         extractedMessage = decodedMessage
                         errorMessage = error
+                        isLoading = false
                     }
                 },
+                modifier = Modifier.weight(1f),
+                enabled = !isLoading && selectedImageUri != null,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                ),
-                enabled = !isLoading
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
             ) {
                 Text(if (isLoading) "Decoding..." else "Decrypt")
             }
         }
 
-        AnimatedVisibility(visible = errorMessage != null) {
-            Column {
-                Spacer(modifier = Modifier.height(15.dp))
+        AnimatedVisibility(
+            visible = errorMessage != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
                 Text(
                     text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(8.dp)
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
 
-        AnimatedVisibility(visible = extractedMessage != null) {
-            Column {
-                Spacer(modifier = Modifier.height(15.dp))
+        AnimatedVisibility(
+            visible = extractedMessage != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                )
+            ) {
                 Text(
-                    text = "Extracted: $extractedMessage",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge
+                    text = "Decoded Message: $extractedMessage",
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
 
-        AnimatedVisibility(visible = showDownloadButton && resultBitmap != null) {
-            Column {
-                Spacer(modifier = Modifier.height(15.dp))
-                Button(
+        AnimatedVisibility(
+            visible = showDownloadButton && resultBitmap != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = {
+                        resultBitmap?.let {
+                            val filename = "stego_${UUID.randomUUID()}.png"
+                            val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                            val file = File(downloads, filename)
+                            FileOutputStream(file).use { out ->
+                                it.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            errorMessage = "Image saved to Downloads folder"
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = "Download")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Save")
+                }
+
+                FilledTonalButton(
                     onClick = {
                         resultBitmap?.let {
                             val filename = "stego_${UUID.randomUUID()}.png"
@@ -213,11 +276,14 @@ fun MainStegoUI() {
                             context.startActivity(Intent.createChooser(shareIntent, "Share Encoded Image"))
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 ) {
-                    Text("Share Encoded Image")
+                    Icon(Icons.Default.Share, contentDescription = "Share")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Share")
                 }
             }
         }
@@ -232,6 +298,10 @@ private fun encodeImage(
 ) {
     if (uri == null) {
         callback(null, "Please select an image first")
+        return
+    }
+    if (message.isBlank()) {
+        callback(null, "Please enter a message to encode")
         return
     }
 
@@ -259,7 +329,11 @@ private fun decodeImage(
     try {
         val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
         val decoded = StegoUtils.decode(bitmap)
-        callback(decoded, null)
+        if (decoded.isBlank()) {
+            callback(null, "No hidden message found in this image")
+        } else {
+            callback(decoded, null)
+        }
     } catch (e: Exception) {
         callback(null, "An error occurred while decoding the message")
     }
