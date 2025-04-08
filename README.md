@@ -13,6 +13,6 @@ This app lets you **hide secret messages inside images** and also **extract them
 
 ### 📦 Installation
 
- Download the APK [HERE](https://github.com/ultfone/Steganography/releases/download/alpha/app-debug.apk) section and install it on your Android device.
+ Download the APK [HERE](https://github.com/ultfone/Steganography/releases/download/alpha/app-debug.apk) and install it on your Android device.
 
 ---
