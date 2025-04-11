@@ -237,18 +237,15 @@ fun MainUI() {
             exit = fadeOut() + shrinkVertically()
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
                 FilledTonalButton(
                     onClick = {
                         resultBitmap?.let {
-                            val format = selectedImageFormat ?: Bitmap.CompressFormat.PNG
-                            val extension = when (format) {
-                                Bitmap.CompressFormat.JPEG -> "jpg"
-                                Bitmap.CompressFormat.WEBP -> "webp"
-                                else -> "png"
-                            }
+                            val format = Bitmap.CompressFormat.PNG
+                            val extension = "png"
                             val filename = "stego_${UUID.randomUUID()}.$extension"
                             val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                             val file = File(downloads, filename)
@@ -270,12 +267,8 @@ fun MainUI() {
                 FilledTonalButton(
                     onClick = {
                         resultBitmap?.let {
-                            val format = selectedImageFormat ?: Bitmap.CompressFormat.PNG
-                            val extension = when (format) {
-                                Bitmap.CompressFormat.JPEG -> "jpg"
-                                Bitmap.CompressFormat.WEBP -> "webp"
-                                else -> "png"
-                            }
+                            val format = Bitmap.CompressFormat.PNG
+                            val extension = "png"
                             val filename = "stego_${UUID.randomUUID()}.$extension"
                             val file = File(context.cacheDir, filename)
                             FileOutputStream(file).use { out ->
@@ -287,7 +280,7 @@ fun MainUI() {
                                 file
                             )
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "image/*"
+                                type = "image/png"
                                 putExtra(Intent.EXTRA_STREAM, uri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
@@ -304,6 +297,7 @@ fun MainUI() {
                     Text("Share")
                 }
             }
+
         }
     }
 }
