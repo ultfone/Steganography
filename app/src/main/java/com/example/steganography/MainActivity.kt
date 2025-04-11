@@ -16,7 +16,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,6 +56,7 @@ fun MainUI() {
     var resultBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var selectedImageFormat by remember { mutableStateOf<Bitmap.CompressFormat?>(null) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedImageUri = uri
@@ -119,12 +119,19 @@ fun MainUI() {
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Select Image", style = MaterialTheme.typography.titleMedium)
+            Text("Select Image (JPG/JPEG/PNG/WEBP)", style = MaterialTheme.typography.titleMedium)
         }
 
         selectedImageUri?.let { uri ->
             val bitmap = remember(uri) {
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val mimeType = context.contentResolver.getType(uri)
+                    selectedImageFormat = when (mimeType) {
+                        "image/jpeg" -> Bitmap.CompressFormat.JPEG
+                        "image/jpg" -> Bitmap.CompressFormat.JPEG
+                        "image/webp" -> Bitmap.CompressFormat.WEBP
+                        else -> Bitmap.CompressFormat.PNG
+                    }
                     BitmapFactory.decodeStream(inputStream)
                 }
             }
@@ -236,11 +243,17 @@ fun MainUI() {
                 FilledTonalButton(
                     onClick = {
                         resultBitmap?.let {
-                            val filename = "stego_${UUID.randomUUID()}.png"
+                            val format = selectedImageFormat ?: Bitmap.CompressFormat.PNG
+                            val extension = when (format) {
+                                Bitmap.CompressFormat.JPEG -> "jpg"
+                                Bitmap.CompressFormat.WEBP -> "webp"
+                                else -> "png"
+                            }
+                            val filename = "stego_${UUID.randomUUID()}.$extension"
                             val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                             val file = File(downloads, filename)
                             FileOutputStream(file).use { out ->
-                                it.compress(Bitmap.CompressFormat.PNG, 100, out)
+                                it.compress(format, 100, out)
                             }
                             errorMessage = "Image saved to Downloads folder"
                         }
@@ -250,7 +263,6 @@ fun MainUI() {
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     )
                 ) {
-                    Icon(Icons.Default.Download, contentDescription = "Download")
                     Spacer(Modifier.width(8.dp))
                     Text("Save")
                 }
@@ -258,10 +270,16 @@ fun MainUI() {
                 FilledTonalButton(
                     onClick = {
                         resultBitmap?.let {
-                            val filename = "stego_${UUID.randomUUID()}.png"
+                            val format = selectedImageFormat ?: Bitmap.CompressFormat.PNG
+                            val extension = when (format) {
+                                Bitmap.CompressFormat.JPEG -> "jpg"
+                                Bitmap.CompressFormat.WEBP -> "webp"
+                                else -> "png"
+                            }
+                            val filename = "stego_${UUID.randomUUID()}.$extension"
                             val file = File(context.cacheDir, filename)
                             FileOutputStream(file).use { out ->
-                                it.compress(Bitmap.CompressFormat.PNG, 100, out)
+                                it.compress(format, 100, out)
                             }
                             val uri = FileProvider.getUriForFile(
                                 context,
@@ -269,7 +287,7 @@ fun MainUI() {
                                 file
                             )
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "image/png"
+                                type = "image/*"
                                 putExtra(Intent.EXTRA_STREAM, uri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
@@ -334,7 +352,9 @@ private fun decodeImage(
         } else {
             callback(decoded, null)
         }
+    } catch (e: IllegalArgumentException) {
+        callback(null, e.message ?: "Invalid message format")
     } catch (e: Exception) {
-        callback(null, "An error occurred while decoding the message")
+        callback(null, "Error: ${e.message}")
     }
 }
