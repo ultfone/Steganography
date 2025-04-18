@@ -287,6 +287,7 @@ fun MainUI() {
                             context.startActivity(Intent.createChooser(shareIntent, "Share Encoded Image"))
                         }
                     },
+                    //insert
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
